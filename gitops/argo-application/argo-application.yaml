@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-argo-app
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    repoURL: 'https://github.com/Virgin28/realchart'  # Replace with your repository URL
+    targetRevision: main 
+    path: realchart
+    helm:
+      values: 
+        - values.yaml
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: argocd  # Namespace where the chart should be deployed
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
