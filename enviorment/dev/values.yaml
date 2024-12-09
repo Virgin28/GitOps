@@ -2,9 +2,6 @@
 replicaCount: 3  # Override Nginx replica count
 global:
   chart:
-    repo: 'https://github.com/Virgin28/realchart'
-    targetRevision: main
-  environment: dev
-  values:
     repo: 'https://github.com/Virgin28/GitOps'
     targetRevision: main
+  environment: dev

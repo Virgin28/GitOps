@@ -6,15 +6,12 @@ metadata:
 spec:
   project: default
   sources:
-    - path: 
+    - path: realchart
       repoURL: "{{ .Values.global.chart.repo }}"
       targetRevision: "{{ .Values.global.chart.targetRevision }}"
       helm:
         valueFiles: 
-          - $values/environments/{{ .Values.global.environment }}/values.yaml
-    - repoURL: "{{ .Values.global.values.repo }}"
-      targetRevision: "{{ .Values.global.values.targetRevision }}"
-      ref: values
+          - values.yaml
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd  
