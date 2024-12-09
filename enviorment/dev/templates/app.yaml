@@ -5,16 +5,16 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  sources:
+  source:
     repoURL: 'https://github.com/Virgin28/realchart'  # Replace with your repository URL
-    targetRevision: main 
+    targetRevision: main
     path: realchart
     helm:
-      values: 
-        - values.yaml
+      valueFiles:
+        - values.yaml  # Specify the values.yaml to override defaults
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: argocd  # Namespace where the chart should be deployed
+    namespace: argocd  #
   syncPolicy:
     automated:
       prune: true
