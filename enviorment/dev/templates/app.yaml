@@ -5,16 +5,19 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: 'https://github.com/Virgin28/realchart'  # Replace with your repository URL
-    targetRevision: main
-    path: realchart
-    helm:
-      valueFiles:
-        - values.yaml  # Specify the values.yaml to override defaults
+  sources:
+    - path: 
+      repoURL: "{{ .Values.global.chart.repo }}"
+      targetRevision: "{{ .Values.global.chart.targetRevision }}"
+      helm:
+        valueFiles: 
+          - $values/environments/{{ .Values.global.environment }}/values.yaml
+    - repoURL: "{{ .Values.global.values.repo }}"
+      targetRevision: "{{ .Values.global.values.targetRevision }}"
+      ref: values
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: argocd  #
+    namespace: argocd  
   syncPolicy:
     automated:
       prune: true
