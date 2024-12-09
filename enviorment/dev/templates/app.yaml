@@ -11,7 +11,7 @@ spec:
     targetRevision: {{ .Values.global.chart.targetRevision }}
     helm:
       valueFiles: 
-        - $values/environments/{{ .Values.global.environment }}/values.yaml
+        - $values/enviorment/{{ .Values.global.environment }}/values.yaml
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: argocd  
