@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   sources:
-    repoURL: 'https://github.com/Virgin28/realchart'  # Replace with your repository URL
+    repoURL: 'https://github.com/Virgin28/GitOps'  # Replace with your repository URL
     targetRevision: main 
-    path: realchart
+    path: dev
     helm:
       values: 
         - values.yaml
