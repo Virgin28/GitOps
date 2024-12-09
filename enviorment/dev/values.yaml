@@ -1,5 +1,5 @@
 # environment/dev/values.yaml
-replicaCount: 4  # Override Nginx replica count
+replicaCount: 2  # Override Nginx replica count
 global:
   chart:
     repo: 'https://github.com/Virgin28/GitOps'
