@@ -19,7 +19,12 @@ that installs nginx on the ArgoCD client.
 
 
 The idea behind it:
-being able to comfortably switch between working enviorments, seed is left untouched
-the GitOps chart is the one who's changing where you can pick which enviorment to start (lets say we have another chart except for dev with diffrent
-resources and values, you can also make the chart to be located at enviorments if resources are always the same on only put values.yaml under the required enviorment such as dev/values.yaml only or prod/values.yaml. my idea was that every enviorment can have a diffrent set of components so it will be better only to change the seed enviorment/(enviorment name). it makes you write more value files but every enviorment will be more universal
-and independet) 
+
+being able to comfortably switch between working enviorments where seed is left ALMOST untouched (depends, will explain)
+
+There are two ways to achieve this: 1) is independent chart for every enviorment (more complicated) and 2) is one values.yaml file only for each evniorment and enabling/disabling diffrent templates.
+
+I chose the first meaning you need to need to change seed path to application which is environment/you choose which
+
+by changing the seed path in the GitOps repository you pick which environment to start.
+each environment has a diffrent resources and values. 
