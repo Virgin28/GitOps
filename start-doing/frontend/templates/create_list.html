@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create List</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .button-container {
+            margin-top: 20px;
+        }
+
+        .input-container input {
+            font-size: 1rem;
+            padding: 8px;
+            margin: 20px 0;
+            width: 50%;
+            max-width: 300px;
+        }
+
+        .back-button, .submit-button {
+            font-size: 1rem;
+            text-decoration: none;
+            color: white;
+            background-color: black;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 2px solid white;
+            margin: 5px;
+        }
+
+        .back-button:hover, .submit-button:hover {
+            background-color: white;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <h1>fresh, new, do.</h1>
+    <div class="input-container">
+        <input type="text" id="list-name" placeholder="Enter list name" required />
+    </div>
+    <div class="button-container">
+        <a href="/" class="back-button">forget about it</a>
+        <button onclick="createList()" class="submit-button">lets go</button>
+    </div>
+
+    <script>
+        function createList() {
+            const listName = document.getElementById('list-name').value;
+            if (!listName) {
+                alert('Please enter a list name');
+                return;
+            }
+
+            fetch('/api/create-list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ list_name: listName })
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/lists';
+                } else {
+                    throw new Error('Failed to create list');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to create list. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>

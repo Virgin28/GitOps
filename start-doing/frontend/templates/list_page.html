@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">What do we got?</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+        }
+
+        h1 {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        ul li {
+            font-size: 1.5rem;
+            margin: 10px 0;
+        }
+
+        a {
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        a:hover {
+            color: #007bff;
+        }
+
+        .button-container {
+            margin-top: 20px;
+        }
+
+        .input-container input {
+            font-size: 1rem;
+            padding: 8px;
+            margin: 20px 0;
+            width: 50%;
+            max-width: 300px;
+        }
+
+        .add-button, .delete-button, .back-button {
+            font-size: 1rem;
+            text-decoration: none;
+            color: white;
+            background-color: black;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 2px solid white;
+            margin: 5px;
+        }
+
+        .add-button:hover, .delete-button:hover, .back-button:hover {
+            background-color: white;
+            color: black;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="list-title"></h1>
+    <ul id="items-container"></ul>
+    <div class="input-container">
+        <input type="text" id="item-input" placeholder="I'm missing an..." required />
+        <button onclick="addItem()" class="add-button">Add Item</button>
+    </div>
+    <div class="button-container">
+        <a href="/lists" class="back-button">Back to Lists</a>
+    </div>
+
+    <script>
+        // Get list name from URL
+        const listName = window.location.pathname.split('/').pop();
+
+        // Check if list exists before trying to load items
+        fetch(`/api/list/exists/${listName}`)
+            .then(response => response.json())
+            .then(data => {
+                if (!data.exists) {
+                    window.location.href = '/lists';
+                    return;
+                }
+                // List exists, set title and load items
+                document.getElementById('list-title').textContent = listName;
+                document.getElementById('page-title').textContent = listName;
+                loadItems();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                window.location.href = '/lists';
+            });
+
+        // Load items
+        function loadItems() {
+            fetch(`/api/list/${listName}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('items-container');
+                    container.innerHTML = '';
+                    data.items.forEach(item => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            ${item[1]}
+                            <button onclick="deleteItem(${item[0]})" class="delete-button">Delete</button>
+                        `;
+                        container.appendChild(li);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        // Add item
+        function addItem() {
+            const input = document.getElementById('item-input');
+            const item = input.value;
+
+            if (!item) {
+                alert('Please enter an item');
+                return;
+            }
+
+            fetch(`/api/list/${listName}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ item: item })
+            })
+            .then(response => {
+                if (response.ok) {
+                    input.value = '';
+                    loadItems();
+                } else {
+                    throw new Error('Failed to add item');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add item. Please try again.');
+            });
+        }
+
+        // Delete item
+        function deleteItem(itemId) {
+            fetch(`/api/list/${listName}/delete/${itemId}`, {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (response.ok) {
+                    loadItems();
+                } else {
+                    throw new Error('Failed to delete item');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to delete item. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>
