@@ -19,8 +19,9 @@
         }
 
         h1 {
-            font-size: 4rem;
+            font-size: 6rem;
             margin-bottom: 20px;
+            transform: translateY(-20%);
         }
 
         .button-container {
@@ -64,7 +65,6 @@
     </div>
 
     <script>
-        // Add enter key support
         document.getElementById('list-name').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 createList();

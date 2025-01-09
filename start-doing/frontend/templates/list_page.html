@@ -27,7 +27,7 @@
 
         ul li {
             font-size: 1.5rem;
-            margin: 10px 0;
+            margin: 5px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -37,7 +37,7 @@
         .item-text {
             flex-grow: 1;
             text-align: left;
-            margin-right: 15px;
+            margin-right: 10px;
         }
 
         a {
@@ -70,7 +70,20 @@
             max-width: 300px;
         }
 
-        .done-button, .add-button, .back-button {
+        .done-button {
+            background-color: #ff4c4c;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .done-button:hover {
+            background-color: #ff1a1a;
+        }
+
+        .add-button, .back-button {
             font-size: 1rem;
             text-decoration: none;
             color: white;
@@ -82,7 +95,7 @@
             cursor: pointer;
         }
 
-        .done-button:hover, .add-button:hover, .back-button:hover {
+        .add-button:hover, .back-button:hover {
             background-color: white;
             color: black;
         }
@@ -96,7 +109,7 @@
         <button onclick="addItem()" class="add-button">Add Item</button>
     </div>
     <div class="button-container">
-        <a href="/lists" class="back-button">Back to Lists</a>
+        <a href="/lists" class="back-button">Back</a>
     </div>
 
     <script>
@@ -159,7 +172,6 @@
             .catch(error => console.error('Error:', error));
         }
 
-        // Add enter key support for adding items
         document.getElementById('item-input').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 addItem();

@@ -19,8 +19,8 @@
         }
 
         h1 {
-            font-size: 2rem;
-            margin-bottom: 20px;
+            font-size: 3rem;
+            margin-bottom: 30px;
         }
 
         #lists-container {
@@ -28,7 +28,7 @@
             padding: 0;
             margin: 0;
             width: 100%;
-            max-width: 400px;
+            max-width: 500px;
         }
 
         #lists-container li {
@@ -36,27 +36,42 @@
             justify-content: space-between;
             align-items: center;
             background-color: #222;
-            padding: 10px 15px;
-            margin-bottom: 10px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
             border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        #lists-container li:hover {
+            background-color: #333;
         }
 
         #lists-container li a {
-            color: #1e90ff;
+            color: #fff;
             text-decoration: none;
+            font-size: 1.3rem;
+            flex-grow: 1;
+            padding: 10px 0;
         }
 
-        #lists-container li a:hover {
-            text-decoration: underline;
+        .list-link {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+            text-decoration: none;
+            color: white;
         }
 
         .delete-list-button {
             background-color: #ff4c4c;
             color: #fff;
             border: none;
-            padding: 5px 10px;
+            padding: 6px 12px;
             border-radius: 3px;
             cursor: pointer;
+            font-size: 1rem;
+            margin-left: 15px;
         }
 
         .delete-list-button:hover {
@@ -64,26 +79,29 @@
         }
 
         .button-container {
-            margin-top: 20px;
+            margin-top: 30px;
             display: flex;
-            gap: 10px;
+            gap: 15px;
         }
 
         .back-button, .create-list-button {
-            background-color: #1e90ff;
-            color: #fff;
+            background-color: black;
+            color: white;
             text-decoration: none;
-            padding: 10px 15px;
+            padding: 8px 16px;
             border-radius: 5px;
+            border: 2px solid white;
+            font-size: 1rem;
         }
 
         .back-button:hover, .create-list-button:hover {
-            background-color: #0056b3;
+            background-color: white;
+            color: black;
         }
 
         #empty-message {
             color: white;
-            font-size: 1.5rem;
+            font-size: 2rem;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
         }
@@ -94,8 +112,8 @@
     <div id="empty-message">what are we up to?</div>
     <ul id="lists-container"></ul>
     <div class="button-container">
-        <a href="/" class="back-button">Back to Home</a>
-        <a href="/create_list" class="create-list-button">Create Another List</a>
+        <a href="/" class="back-button">Home</a>
+        <a href="/create_list" class="create-list-button">Do!</a>
     </div>
 
     <script>
@@ -117,9 +135,15 @@
                         data.lists.forEach(list => {
                             const li = document.createElement('li');
                             li.innerHTML = `
-                                <a href="/list/${list}">${list}</a>
+                                <a href="/list/${list}" class="list-link">${list}</a>
                                 <button onclick="deleteList('${list}')" class="delete-list-button">Delete</button>
                             `;
+                            // Make the whole li clickable, except for the delete button
+                            li.addEventListener('click', (e) => {
+                                if (!e.target.classList.contains('delete-list-button')) {
+                                    window.location.href = `/list/${list}`;
+                                }
+                            });
                             container.appendChild(li);
                         });
                     }
@@ -128,19 +152,19 @@
         }
 
         function deleteList(listName) {
+            // Stop event propagation to prevent navigation
+            event.stopPropagation();
             if (confirm(`Are you sure you want to delete "${listName}"?`)) {
                 fetch(`/api/delete-list/${listName}`, {
                     method: 'DELETE'
                 })
                 .then(response => response.json())
                 .then(data => {
-                    // Remove the list element directly from DOM
                     const listElement = Array.from(document.querySelectorAll('#lists-container li'))
                         .find(li => li.querySelector('a').textContent === listName);
                     if (listElement) {
                         listElement.remove();
                     }
-                    // Check if there are any lists left
                     if (document.querySelectorAll('#lists-container li').length === 0) {
                         document.getElementById('empty-message').style.opacity = '1';
                         setTimeout(() => {

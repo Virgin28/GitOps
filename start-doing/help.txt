@@ -1,0 +1,38 @@
+few things that you must address. 
+
+1. still now way to access list page. I press on the list (table) from the lists page. cant reach the list_page of the specific list. that is the biggest problem since I cannot add or delete items to that list and so simply  nothing works. the idea is to reach a list which is a table in our "start doing" database. 
+2. removing a list does in fact remove it but I have to refresh the page. in the past the list was just removed. you cant keep the "list deleted" alert but It should be more like "(list name) removed" thing. also making sure all happens without a refresh. 
+3. if there aren't any lists on list page no error should be presented, instead. maybe a "what are we up to" in white message that disappears will be a lot more inviting 
+4. on the improving notes, I would want the list items in list page to "aline" so the delete button will in fact be located in the same line as the other lines in that list. also, replace delete with "done". thats what this app is more about.
+
+
+
+worker_processes 1;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    server {
+        listen 80;
+        server_name localhost;
+
+        # Proxy all requests to backend
+        location / {
+            proxy_pass http://backend:5001;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # CORS headers
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
+        }
+    }
+}
