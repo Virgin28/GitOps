@@ -6,5 +6,9 @@ the app should be found on
 https://app.bokertovmatoki.online
 
 Frontend - Nginx
+
+
 DB - mysql - AWS/RDS
+
+
 Backend - Python
