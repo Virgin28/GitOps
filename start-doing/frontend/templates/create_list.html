@@ -10,6 +10,12 @@
             color: white;
             text-align: center;
             font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
         }
 
         h1 {
@@ -38,6 +44,7 @@
             border-radius: 5px;
             border: 2px solid white;
             margin: 5px;
+            cursor: pointer;
         }
 
         .back-button:hover, .submit-button:hover {
@@ -49,16 +56,23 @@
 <body>
     <h1>fresh, new, do.</h1>
     <div class="input-container">
-        <input type="text" id="list-name" placeholder="Enter list name" required />
+        <input type="text" id="list-name" placeholder="what now?" required />
     </div>
     <div class="button-container">
-        <a href="/" class="back-button">forget about it</a>
-        <button onclick="createList()" class="submit-button">lets go</button>
+        <a href="/lists" class="back-button">forget about it</a>
+        <button onclick="createList()" class="submit-button">LETS GO</button>
     </div>
 
     <script>
+        // Add enter key support
+        document.getElementById('list-name').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                createList();
+            }
+        });
+
         function createList() {
-            const listName = document.getElementById('list-name').value;
+            const listName = document.getElementById('list-name').value.trim();
             if (!listName) {
                 alert('Please enter a list name');
                 return;
@@ -72,11 +86,13 @@
                 body: JSON.stringify({ list_name: listName })
             })
             .then(response => {
-                if (response.ok) {
-                    window.location.href = '/lists';
-                } else {
-                    throw new Error('Failed to create list');
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
                 }
+                return response.json();
+            })
+            .then(data => {
+                window.location.href = '/lists';
             })
             .catch(error => {
                 console.error('Error:', error);

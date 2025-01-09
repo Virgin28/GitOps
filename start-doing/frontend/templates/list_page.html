@@ -20,11 +20,24 @@
         ul {
             list-style-type: none;
             padding: 0;
+            width: 80%;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         ul li {
             font-size: 1.5rem;
             margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 15px;
+        }
+
+        .item-text {
+            flex-grow: 1;
+            text-align: left;
+            margin-right: 15px;
         }
 
         a {
@@ -41,15 +54,23 @@
             margin-top: 20px;
         }
 
+        .input-container {
+            margin: 20px auto;
+            width: 80%;
+            max-width: 600px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
         .input-container input {
             font-size: 1rem;
             padding: 8px;
-            margin: 20px 0;
-            width: 50%;
+            flex-grow: 1;
             max-width: 300px;
         }
 
-        .add-button, .delete-button, .back-button {
+        .done-button, .add-button, .back-button {
             font-size: 1rem;
             text-decoration: none;
             color: white;
@@ -58,9 +79,10 @@
             border-radius: 5px;
             border: 2px solid white;
             margin: 5px;
+            cursor: pointer;
         }
 
-        .add-button:hover, .delete-button:hover, .back-button:hover {
+        .done-button:hover, .add-button:hover, .back-button:hover {
             background-color: white;
             color: black;
         }
@@ -78,28 +100,10 @@
     </div>
 
     <script>
-        // Get list name from URL
         const listName = window.location.pathname.split('/').pop();
+        document.getElementById('list-title').textContent = listName;
+        document.getElementById('page-title').textContent = listName;
 
-        // Check if list exists before trying to load items
-        fetch(`/api/list/exists/${listName}`)
-            .then(response => response.json())
-            .then(data => {
-                if (!data.exists) {
-                    window.location.href = '/lists';
-                    return;
-                }
-                // List exists, set title and load items
-                document.getElementById('list-title').textContent = listName;
-                document.getElementById('page-title').textContent = listName;
-                loadItems();
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                window.location.href = '/lists';
-            });
-
-        // Load items
         function loadItems() {
             fetch(`/api/list/${listName}`)
                 .then(response => response.json())
@@ -109,8 +113,8 @@
                     data.items.forEach(item => {
                         const li = document.createElement('li');
                         li.innerHTML = `
-                            ${item[1]}
-                            <button onclick="deleteItem(${item[0]})" class="delete-button">Delete</button>
+                            <span class="item-text">${item[1]}</span>
+                            <button onclick="deleteItem(${item[0]})" class="done-button">Done</button>
                         `;
                         container.appendChild(li);
                     });
@@ -118,10 +122,9 @@
                 .catch(error => console.error('Error:', error));
         }
 
-        // Add item
         function addItem() {
             const input = document.getElementById('item-input');
-            const item = input.value;
+            const item = input.value.trim();
 
             if (!item) {
                 alert('Please enter an item');
@@ -139,17 +142,11 @@
                 if (response.ok) {
                     input.value = '';
                     loadItems();
-                } else {
-                    throw new Error('Failed to add item');
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to add item. Please try again.');
-            });
+            .catch(error => console.error('Error:', error));
         }
 
-        // Delete item
         function deleteItem(itemId) {
             fetch(`/api/list/${listName}/delete/${itemId}`, {
                 method: 'DELETE'
@@ -157,15 +154,20 @@
             .then(response => {
                 if (response.ok) {
                     loadItems();
-                } else {
-                    throw new Error('Failed to delete item');
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to delete item. Please try again.');
-            });
+            .catch(error => console.error('Error:', error));
         }
+
+        // Add enter key support for adding items
+        document.getElementById('item-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                addItem();
+            }
+        });
+
+        // Initial load
+        loadItems();
     </script>
 </body>
 </html>
