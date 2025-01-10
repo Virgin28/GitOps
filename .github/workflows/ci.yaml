@@ -10,52 +10,51 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v3
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-    - name: Log in to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v2
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-    - name: Install Docker Compose
-      run: |
-        sudo curl -L "https://github.com/docker/compose/releases/download/v2.19.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-        docker-compose --version  # Verify installation
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.19.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version  # Verify installation
 
-    - name: Create ECR repository if it doesn't exist
-      run: |
-        aws ecr describe-repositories --repository-names gitops || aws ecr create-repository --repository-name gitops
+      - name: Create ECR repository if it doesn't exist
+        run: |
+          aws ecr describe-repositories --repository-names gitops || aws ecr create-repository --repository-name gitops
 
-    - name: Build Backend (Python) image
-      run: |
-        docker build -t my-python-backend:latest -f start-doing/backend/Dockerfile start-doing/backend
-        docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+      - name: Build Backend (Python) image
+        run: |
+          docker build -t my-python-backend:latest -f start-doing/backend/Dockerfile start-doing/backend
+          docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
 
-    - name: Build Frontend (NGINX) image
-      run: |
-        docker build -t my-nginx-frontend:latest -f start-doing/frontend/Dockerfile start-doing/frontend
-        docker tag  my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+      - name: Build Frontend (NGINX) image
+        run: |
+          docker build -t my-nginx-frontend:latest -f start-doing/frontend/Dockerfile start-doing/frontend
+          docker tag my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
 
-    - name: Test connectivity between Frontend (NGINX) and Backend (Python)
-      run: |
-        docker-compose -f start-doing/docker-compose.yaml up -d
-        sleep 30 # Wait for containers to start
-        FRONTEND_CONTAINER=$(docker ps -q --filter "ancestor=my-nginx-frontend") # Get frontend container ID
-        docker exec -i $FRONTEND_CONTAINER curl -I http://backend:5001 # Test if frontend can connect to backend
-        docker-compose -f start-doing/docker-compose.yaml down
+      - name: Test connectivity between Frontend (NGINX) and Backend (Python)
+        run: |
+          docker-compose -f start-doing/docker-compose.yaml up -d
+          sleep 30 # Wait for containers to start
+          docker exec -i frontend curl -I http://backend:5001 # Test if frontend can connect to backend
+          docker-compose -f start-doing/docker-compose.yaml down
 
-    - name: Push Backend (Python) image to ECR
-      run: |
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+      - name: Push Backend (Python) image to ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
 
-    - name: Push Frontend (NGINX) image to ECR
-      run: |
-        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+      - name: Push Frontend (NGINX) image to ECR
+        run: |
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
