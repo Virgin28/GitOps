@@ -37,12 +37,12 @@ jobs:
       - name: Build Backend (Python) image
         run: |
           docker build -t my-python-backend:latest -f start-doing/backend/Dockerfile start-doing/backend
-          docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+          docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:backend-latest
 
       - name: Build Frontend (NGINX) image
         run: |
           docker build -t my-nginx-frontend:latest -f start-doing/frontend/Dockerfile start-doing/frontend
-          docker tag my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+          docker tag my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:frontend-latest
 
       - name: Test connectivity between Frontend (NGINX) and Backend (Python)
         run: |
@@ -53,8 +53,8 @@ jobs:
 
       - name: Push Backend (Python) image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:backend-latest
 
       - name: Push Frontend (NGINX) image to ECR
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:frontend-latest
