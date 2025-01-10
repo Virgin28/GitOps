@@ -1,0 +1,50 @@
+name: Build and Push Multi-Container App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-test-push:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ secrets.AWS_REGION }}
+
+    - name: Log in to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build Backend (Python) image
+      run: |
+        docker build -t my-python-app:latest -f start-doing/backend/Dockerfile start-doing/backend
+        docker tag backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+
+    - name: Build Frontend (NGINX) image
+      run: |
+        docker build -t my-nginx-app:latest -f start-doing/frontend/Dockerfile start-doing/frontend
+        docker tag frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+
+    - name: Test connectivity using Docker Compose
+      run: |
+        docker-compose -f start-doing/docker-compose.yaml up -d
+        sleep 30 # Wait for containers to start
+        curl -I http://localhost:8080 # Test NGINX connectivity to Python backend
+        docker-compose -f start-doing/docker-compose.yaml down
+
+    - name: Push Backend (Python) image to ECR
+      run: |
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+
+    - name: Push Frontend (NGINX) image to ECR
+      run: |
+        docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
