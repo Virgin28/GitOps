@@ -24,6 +24,10 @@ jobs:
       id: login-ecr
       uses: aws-actions/amazon-ecr-login@v2
 
+    - name: Create ECR repository if it doesn't exist
+      run: |
+        aws ecr describe-repositories --repository-names gitops || aws ecr create-repository --repository-name gitops
+
     - name: Build Backend (Python) image
       run: |
         docker build -t my-python-backend:latest -f start-doing/backend/Dockerfile start-doing/backend
@@ -32,13 +36,14 @@ jobs:
     - name: Build Frontend (NGINX) image
       run: |
         docker build -t my-nginx-frontend:latest -f start-doing/frontend/Dockerfile start-doing/frontend
-        docker tag  my-nginx-app:frontend ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+        docker tag  my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
 
-    - name: Test connectivity using Docker Compose
+    - name: Test connectivity between Frontend (NGINX) and Backend (Python)
       run: |
         docker-compose -f start-doing/docker-compose.yaml up -d
         sleep 30 # Wait for containers to start
-        curl -I http://localhost:8080 # Test NGINX connectivity to Python backend
+        FRONTEND_CONTAINER=$(docker ps -q --filter "ancestor=my-nginx-frontend") # Get frontend container ID
+        docker exec -i $FRONTEND_CONTAINER curl -I http://backend:5001 # Test if frontend can connect to backend
         docker-compose -f start-doing/docker-compose.yaml down
 
     - name: Push Backend (Python) image to ECR
