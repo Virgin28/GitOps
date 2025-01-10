@@ -94,14 +94,21 @@
             font-size: 1rem;
         }
 
-        .back-button:hover, .create-list-button:hover {
-            background-color: white;
-            color: black;
+        .back-button:hover {
+            background-color: #ff0000;
+            border-color: #ff0000;
+            color: white;
+        }
+
+        .create-list-button:hover {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+            color: white;
         }
 
         #empty-message {
             color: white;
-            font-size: 2rem;
+            font-size: 1.2rem;
             opacity: 0;
             transition: opacity 0.3s ease-in-out;
         }
@@ -113,7 +120,7 @@
     <ul id="lists-container"></ul>
     <div class="button-container">
         <a href="/" class="back-button">Home</a>
-        <a href="/create_list" class="create-list-button">Do!</a>
+        <a href="/create_list" class="create-list-button">DO</a>
     </div>
 
     <script>

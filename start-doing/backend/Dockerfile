@@ -1,15 +1,14 @@
 FROM python:3.9-slim
 
-# Set the working directory
 WORKDIR /app
 
-# Copy application files
-COPY . /app
+# Copy only the necessary files
+COPY app.py requirements.txt ./
+COPY templates ./templates/
 
 # Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose the port Flask will run on
 EXPOSE 5001
 
 # Use Gunicorn to serve the application
