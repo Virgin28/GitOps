@@ -1,4 +1,4 @@
-name: Build and Push Multi-Container App
+name: GitHub Acting for Start-Doing
 
 on:
   push:
@@ -26,13 +26,13 @@ jobs:
 
     - name: Build Backend (Python) image
       run: |
-        docker build -t my-python-app:latest -f start-doing/backend/Dockerfile start-doing/backend
-        docker tag backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+        docker build -t my-python-backend:latest -f start-doing/backend/Dockerfile start-doing/backend
+        docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
 
     - name: Build Frontend (NGINX) image
       run: |
-        docker build -t my-nginx-app:latest -f start-doing/frontend/Dockerfile start-doing/frontend
-        docker tag frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
+        docker build -t my-nginx-frontend:latest -f start-doing/frontend/Dockerfile start-doing/frontend
+        docker tag  my-nginx-app:frontend ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops
 
     - name: Test connectivity using Docker Compose
       run: |
