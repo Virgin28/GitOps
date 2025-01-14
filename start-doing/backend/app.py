@@ -10,10 +10,10 @@ app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
 # Database configuration
-DB_USER = os.getenv('MYSQL_USER', 'root')
-DB_PASSWORD = os.getenv('MYSQL_PASSWORD', 'root')
-DB_HOST = os.getenv('MYSQL_HOST', 'db')
-DB_NAME = os.getenv('MYSQL_DB', 'startdoing')
+DB_USER = os.getenv('MYSQL_USER')
+DB_PASSWORD = os.getenv('MYSQL_PASSWORD')
+DB_HOST = os.getenv('MYSQL_HOST')
+DB_NAME = os.getenv('MYSQL_DB')
 
 # Configure SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"

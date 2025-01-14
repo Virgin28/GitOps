@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: 058264364931.dkr.ecr.us-east-1.amazonaws.com/gitops:backend-latest
+        env:
+        - name: MYSQL_USER
+          valueFrom:
+            secretKeyRef:
+              name: rds-secret-access
+              key: DB_USERNAME
+        - name: MYSQL_PASSWORD
+          valueFrom
+            secretKeyRef:
+              name: rds-secret-access
+              key: DB_PASSWORD
+        - name: MYSQL_HOST
+          value: "gitops.c38gmiao0snn.us-east-1.rds.amazonaws.com"
+        - name: MYSQL_DB
+          value: "gitops"
+        ports:
+        - containerPort: 5001
