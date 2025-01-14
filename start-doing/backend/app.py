@@ -1,27 +1,59 @@
 from flask import Flask, render_template, request, redirect, jsonify, send_from_directory
-import mysql.connector
+from flask_sqlalchemy import SQLAlchemy
 import os
 from flask_cors import CORS
 import re
+import sqlalchemy.exc
+from sqlalchemy import text
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
-def get_db_connection():
+# Database configuration
+DB_USER = os.getenv('MYSQL_USER', 'root')
+DB_PASSWORD = os.getenv('MYSQL_PASSWORD', 'root')
+DB_HOST = os.getenv('MYSQL_HOST', 'db')
+DB_NAME = os.getenv('MYSQL_DB', 'startdoing')
+
+# Configure SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ECHO'] = True  # This will log all database operations
+
+db = SQLAlchemy(app)
+
+# Ensure the database exists
+def init_db():
     try:
-        conn = mysql.connector.connect(
-            host=os.getenv("MYSQL_HOST", "db"),
-            user=os.getenv("MYSQL_USER", "root"),
-            password=os.getenv("MYSQL_PASSWORD", "root"),
-            database=os.getenv("MYSQL_DB", "startdoing")
-        )
-        return conn
-    except mysql.connector.Error as e:
-        print(f"Error connecting to database: {e}")
-        return None
+        # Create database if it doesn't exist
+        engine = sqlalchemy.create_engine(f"mysql+mysqlconnector://{DB_USER}:{DB_PASSWORD}@{DB_HOST}")
+        with engine.connect() as conn:
+            conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {DB_NAME}"))
+        engine.dispose()
+        
+        # Initialize the app's database connection
+        db.create_all()
+        return True
+    except Exception as e:
+        print(f"Database initialization error: {e}")
+        return False
 
 def sanitize_table_name(name):
     return re.sub(r'[^a-zA-Z0-9_]', '_', name)
+
+class DynamicList():
+    @staticmethod
+    def get_model(table_name):
+        class List(db.Model):
+            __tablename__ = table_name
+            __table_args__ = {'extend_existing': True}
+            id = db.Column(db.Integer, primary_key=True)
+            item = db.Column(db.String(255), nullable=False)
+        return List
+
+@app.before_first_request
+def initialize():
+    init_db()
 
 @app.route('/')
 def index():
@@ -47,108 +79,77 @@ def api_create_list():
             return jsonify({'message': 'List name is required.'}), 400
         
         list_name = sanitize_table_name(list_name)
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'message': 'Database connection failed.'}), 500
-
-        cursor = conn.cursor()
         
-        # First check if table exists
-        cursor.execute(f"SHOW TABLES LIKE '{list_name}'")
-        if cursor.fetchone():
-            cursor.close()
-            conn.close()
+        # Check if table exists
+        inspector = sqlalchemy.inspect(db.engine)
+        if list_name in inspector.get_table_names():
             return jsonify({'message': 'List already exists.'}), 400
 
-        # Create the table with proper structure
-        cursor.execute(f"""
-            CREATE TABLE `{list_name}` (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                item VARCHAR(255) NOT NULL
-            )
-        """)
+        # Create new table
+        ListModel = DynamicList.get_model(list_name)
+        db.create_all()
         
-        conn.commit()
-        cursor.close()
-        conn.close()
         return jsonify({'message': f'List {list_name} created successfully.'}), 201
         
     except Exception as e:
-        print(f"Error creating list: {e}")
-        return jsonify({'message': f'Error creating list: {str(e)}'}), 500
+        print(f"Error creating list: {str(e)}")
+        return jsonify({'message': 'Failed to create list. Database error.'}), 500
 
 @app.route('/api/lists', methods=['GET'])
 def api_lists():
-    conn = get_db_connection()
-    if not conn:
-        return jsonify({'message': 'Database connection failed.'}), 500
-
-    cursor = conn.cursor()
-    cursor.execute("SHOW TABLES")
-    tables = [table[0] for table in cursor.fetchall()]
-    cursor.close()
-    conn.close()
-    return jsonify({'lists': tables}), 200
+    try:
+        inspector = sqlalchemy.inspect(db.engine)
+        tables = inspector.get_table_names()
+        return jsonify({'lists': tables}), 200
+    except Exception as e:
+        print(f"Error getting lists: {str(e)}")
+        return jsonify({'message': 'Failed to retrieve lists. Database error.'}), 500
 
 @app.route('/api/list/<list_name>', methods=['GET', 'POST'])
 def api_list_items(list_name):
     try:
         list_name = sanitize_table_name(list_name)
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'message': 'Database connection failed.'}), 500
-
-        cursor = conn.cursor()
+        ListModel = DynamicList.get_model(list_name)
         
         if request.method == 'POST':
             item = request.json.get('item')
-            cursor.execute(f"INSERT INTO `{list_name}` (item) VALUES (%s)", (item,))
-            conn.commit()
+            if not item:
+                return jsonify({'message': 'Item content is required.'}), 400
+            
+            new_item = ListModel(item=item)
+            db.session.add(new_item)
+            db.session.commit()
         
-        cursor.execute(f"SELECT * FROM `{list_name}`")
-        items = cursor.fetchall()
-        cursor.close()
-        conn.close()
+        items = [(item.id, item.item) for item in ListModel.query.all()]
         return jsonify({'items': items}), 200
     except Exception as e:
-        print(f"Error accessing list: {e}")
-        return jsonify({'message': f'Error accessing list: {str(e)}'}), 500
+        print(f"Error accessing list: {str(e)}")
+        return jsonify({'message': 'Failed to access list. Database error.'}), 500
 
 @app.route('/api/list/<list_name>/delete/<int:item_id>', methods=['DELETE'])
 def api_delete_item(list_name, item_id):
     try:
         list_name = sanitize_table_name(list_name)
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'message': 'Database connection failed.'}), 500
-
-        cursor = conn.cursor()
-        cursor.execute(f"DELETE FROM `{list_name}` WHERE id = %s", (item_id,))
-        conn.commit()
-        cursor.close()
-        conn.close()
-        return jsonify({'message': 'Item done!'}), 200
+        ListModel = DynamicList.get_model(list_name)
+        item = ListModel.query.get(item_id)
+        if item:
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({'message': 'Item done!'}), 200
+        return jsonify({'message': 'Item not found.'}), 404
     except Exception as e:
-        print(f"Error deleting item: {e}")
-        return jsonify({'message': f'Error deleting item: {str(e)}'}), 500
+        print(f"Error deleting item: {str(e)}")
+        return jsonify({'message': 'Failed to delete item. Database error.'}), 500
 
 @app.route('/api/delete-list/<list_name>', methods=['DELETE'])
 def api_delete_list(list_name):
     try:
         list_name = sanitize_table_name(list_name)
-        conn = get_db_connection()
-        if not conn:
-            return jsonify({'message': 'Database connection failed.'}), 500
-
-        cursor = conn.cursor()
-        cursor.execute(f"DROP TABLE IF EXISTS `{list_name}`")
-        conn.commit()
-        cursor.close()
-        conn.close()
+        db.engine.execute(text(f"DROP TABLE IF EXISTS `{list_name}`"))
         return jsonify({'message': f'List {list_name} removed successfully.'}), 200
     except Exception as e:
-        print(f"Error deleting list: {e}")
-        return jsonify({'message': f'Error deleting list: {str(e)}'}), 500
+        print(f"Error deleting list: {str(e)}")
+        return jsonify({'message': 'Failed to delete list. Database error.'}), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001)
