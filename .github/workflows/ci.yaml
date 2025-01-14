@@ -1,4 +1,4 @@
-name: GitHub Acting for Start-Doing
+name: GitHub Actions for Start-Doing
 
 on:
   push:
@@ -44,17 +44,35 @@ jobs:
           docker build -t my-nginx-frontend:latest -f start-doing/frontend/Dockerfile start-doing/frontend
           docker tag my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:frontend-latest
 
-      - name: Test connectivity between Frontend (NGINX) and Backend (Python)
+      - name: Test network connectivity
         run: |
+          # Start containers
           docker-compose -f start-doing/docker-compose.yaml up -d
-          sleep 30 # Wait for containers to start
-          docker exec -i frontend curl -I http://backend:5001 # Test if frontend can connect to backend
+          
+          # Give containers time to start
+          sleep 7
+          
+          # Install ping in frontend container (it might not have it by default)
+          docker exec frontend apt-get update 
+          docker exec frontend apt-get install -y iputils-ping
+          
+          # Simple ping test from frontend to backend
+          echo "Testing network connectivity..."
+          if ! docker exec frontend ping -c 2 backend; then
+            echo "❌ Network connectivity test failed"
+            docker-compose -f start-doing/docker-compose.yaml down
+            exit 1
+          fi
+          
+          echo "✅ Network connectivity test passed!"
           docker-compose -f start-doing/docker-compose.yaml down
 
       - name: Push Backend (Python) image to ECR
+        if: success()
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:backend-latest
 
       - name: Push Frontend (NGINX) image to ECR
+        if: success()
         run: |
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:frontend-latest
