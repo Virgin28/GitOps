@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: {{ .Values.image.backend.name }}
   labels:
-    app: backend
+    {{- include "myapp.backendLabels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: backend
+      {{- include "myapp.backendLabels" . | nindent 8 }}
   template:
     metadata:
       labels:
-        app: backend
+        {{- include "myapp.backendLabels" . | nindent 8 }}
     spec:
       containers:
       - name: backend
-        image: 058264364931.dkr.ecr.us-east-1.amazonaws.com/gitops:backend-latest
+        image: {{ .Values.image.backend.repository }}
         env:
         - name: MYSQL_USER
           valueFrom:
@@ -24,13 +24,13 @@ spec:
               name: rds-secret-access
               key: DB_USERNAME
         - name: MYSQL_PASSWORD
-          valueFrom
+          valueFrom:
             secretKeyRef:
               name: rds-secret-access
               key: DB_PASSWORD
         - name: MYSQL_HOST
-          value: "gitops.c38gmiao0snn.us-east-1.rds.amazonaws.com"
+          value: {{ .Values.rds.host }}
         - name: MYSQL_DB
-          value: "gitops"
+          value: {{ .Values.rds.name }}
         ports:
         - containerPort: 5001

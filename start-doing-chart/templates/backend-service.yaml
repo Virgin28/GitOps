@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
+  name: {{ .Values.image.backend.name }}
 spec:
   selector:
-    app: backend
+    {{- include "myapp.backendLabels" . | nindent 4 }}
   ports:
   - protocol: TCP
-    port: 5001
-    targetPort: 5001
-  type: NodePort
+    port: {{ .Values.image.backend.port }}
+    targetPort: {{ .Values.image.backend.port }}
+  type: {{ .Values.service.type }}

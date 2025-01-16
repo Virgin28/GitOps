@@ -3,9 +3,9 @@ kind: Ingress
 metadata:
   name: frontend-ingress
 spec:
-  ingressClassName: nginx
+  ingressClassName: {{ .Values.ingress.className }}
   rules:
-  - host: app.bokertovmatoki.online
+  - host: app.{{ .Values.global.domain }}
     http:
       paths:
       - path: /

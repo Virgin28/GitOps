@@ -60,3 +60,15 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/* Define frontend label */}}
+{{- define "myapp.frontendLabels" -}}
+app: {{ .Values.image.frontend.name }}
+environment: {{ .Values.global.environment }}
+{{- end -}}
+
+{{/* Define backend label */}}
+{{- define "myapp.backendLabels" -}}
+app: {{ .Values.image.backend.name }}
+environment: {{ .Values.global.environment }}
+{{- end -}}

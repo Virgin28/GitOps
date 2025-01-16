@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend
+  name: {{ .Values.image.frontend.name }}
   labels:
-    app: frontend
+    {{- include "myapp.frontendLabels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: frontend
+      {{- include "myapp.frontendLabels" . | nindent 8 }}
   template:
     metadata:
       labels:
-        app: frontend
+        {{- include "myapp.frontendLabels" . | nindent 8 }}
     spec:
       containers:
       - name: frontend
-        image: 058264364931.dkr.ecr.us-east-1.amazonaws.com/gitops:frontend-latest
+        image: {{ .Values.image.frontend.repository }}
         ports:
         - containerPort: 80

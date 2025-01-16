@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend
+  name: {{ .Values.image.frontend.name }}
 spec:
   selector:
-    app: frontend
+    {{- include "myapp.frontendLabels" . | nindent 4 }}
   ports:
   - protocol: TCP
-    port: 80
-    targetPort: 80
-  type: NodePort
+    port: {{ .Values.image.frontend.port }}
+    targetPort: {{ .Values.image.frontend.port }}
+  type: {{ .Values.service.type }}
