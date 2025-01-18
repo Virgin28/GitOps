@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+      - staging
+      - dev
+      - prod
 
 jobs:
   build-test-push:
@@ -37,12 +40,12 @@ jobs:
       - name: Build Backend (Python) image
         run: |
           docker build -t my-python-backend:latest -f start-doing/backend/Dockerfile start-doing/backend
-          docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:std-back
+          docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:BACK-${{ github.sha }}
 
       - name: Build Frontend (NGINX) image
         run: |
           docker build -t my-nginx-frontend:latest -f start-doing/frontend/Dockerfile start-doing/frontend
-          docker tag my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:std-front
+          docker tag my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:FRONT-${{ github.sha }}
 
       - name: Test network connectivity
         run: |
@@ -70,9 +73,70 @@ jobs:
       - name: Push Backend (Python) image to ECR
         if: success()
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:std-back
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:BACK-${{ github.sha }}
 
       - name: Push Frontend (NGINX) image to ECR
         if: success()
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:std-front
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:FRONT-${{ github.sha }}
+          
+      - name: Login to GitHub
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+   
+      - name: Clone GitOps Repository
+        run: |
+          cd /home/runner/work/
+          git clone https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/Virgin28/GitOps-ArgoCD.git
+          cd /home/runner/work/GitOps-ArgoCD
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      # Step 5: Update the Values File for the Correct Environment
+      - name: Update Values File
+        run: |
+          cd /home/runner/work/GitOps-ArgoCD/environments/
+
+          # Determine environment based on the branch name
+          if [[ "${{ github.ref_name }}" == "main" ]]; then
+            env_dir="dev"
+          elif [[ "${{ github.ref_name }}" == "staging" ]]; then
+            env_dir="staging"
+          elif [[ "${{ github.ref_name }}" == "prod" ]]; then
+            env_dir="prod"
+          elif [[ "${{ github.ref_name }}" == "dev" ]]; then
+            env_dir="dev"
+          fi
+
+          # Set the values file path
+          values_file="$env_dir/values.yaml"
+
+          # Debugging: Print out the values_file path
+          echo "Using values file: $values_file"
+
+          # Check if the values.yaml file exists
+          if [[ ! -f "$values_file" ]]; then
+            echo "❌ values.yaml not found at $values_file. Exiting."
+            exit 1
+          fi
+
+          # Get the Git commit SHA (you can use $GITHUB_SHA for the current commit)
+          commit_sha="${{ github.sha }}"
+
+          # Update values.yaml for frontend and backend with commit SHA tags
+          sed -i "s|repository:.*gitops:FRONT-.*|repository: 058264364931.dkr.ecr.us-east-1.amazonaws.com/gitops:FRONT-${commit_sha}|g" $values_file
+          sed -i "s|imageRepo:.*gitops:BACK-.*|imageRepo: 058264364931.dkr.ecr.us-east-1.amazonaws.com/gitops:BACK-${commit_sha}|g" $values_file
+
+          # Debugging: Verify the changes were made
+          echo "Updated values.yaml with frontend and backend commit SHA tags."
+
+      # Step 6: Commit and Push Changes to GitOps Repository
+      - name: Commit and Push Changes
+        run: |
+          cd /home/runner/work/GitOps-ArgoCD/
+          git add .
+          git commit -m "Update image tags for ${{ github.ref_name }} to ${{ github.sha }}"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
