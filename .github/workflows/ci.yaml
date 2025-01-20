@@ -27,6 +27,10 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Get the shortened commit SHA
+        id: git-info
+        run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Install Docker Compose
         run: |
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.19.1/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -40,12 +44,12 @@ jobs:
       - name: Build Backend (Python) image
         run: |
           docker build -t my-python-backend:latest -f start-doing/backend/Dockerfile start-doing/backend
-          docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:BACK-${{ github.sha }}
+          docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:BACK-${{ env.sha }}
 
       - name: Build Frontend (NGINX) image
         run: |
           docker build -t my-nginx-frontend:latest -f start-doing/frontend/Dockerfile start-doing/frontend
-          docker tag my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:FRONT-${{ github.sha }}
+          docker tag my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:FRONT-${{ env.sha }}
 
       - name: Test network connectivity
         run: |
@@ -73,12 +77,12 @@ jobs:
       - name: Push Backend (Python) image to ECR
         if: success()
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:BACK-${{ github.sha }}
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:BACK-${{ env.sha }}
 
       - name: Push Frontend (NGINX) image to ECR
         if: success()
         run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:FRONT-${{ github.sha }}
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:FRONT-${{ env.sha }}
           
       - name: Login to GitHub
         run: |
@@ -93,7 +97,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      # Step 5: Update the Values File for the Correct Environment
       - name: Update Values File
         run: |
           cd /home/runner/work/GitOps-ArgoCD/environments/
@@ -121,22 +124,21 @@ jobs:
             exit 1
           fi
 
-          # Get the Git commit SHA (you can use $GITHUB_SHA for the current commit)
-          commit_sha="${{ github.sha }}"
+          # Use the short SHA from the environment variable
+          commit_sha="${{ env.sha }}"
 
           # Update values.yaml for frontend and backend with commit SHA tags
           sed -i "s|repository:.*gitops:FRONT-.*|repository: 058264364931.dkr.ecr.us-east-1.amazonaws.com/gitops:FRONT-${commit_sha}|g" $values_file
-          sed -i "s|imageRepo:.*gitops:BACK-.*|imageRepo: 058264364931.dkr.ecr.us-east-1.amazonaws.com/gitops:BACK-${commit_sha}|g" $values_file
+          sed -i "s|repository:.*gitops:BACK-.*|repository: 058264364931.dkr.ecr.us-east-1.amazonaws.com/gitops:BACK-${commit_sha}|g" $values_file
 
           # Debugging: Verify the changes were made
           echo "Updated values.yaml with frontend and backend commit SHA tags."
 
-      # Step 6: Commit and Push Changes to GitOps Repository
       - name: Commit and Push Changes
         run: |
           cd /home/runner/work/GitOps-ArgoCD/
           git add .
-          git commit -m "Update image tags for ${{ github.ref_name }} to ${{ github.sha }}"
+          git commit -m "Update image tags for ${{ github.ref_name }} to ${{ env.sha }}"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
