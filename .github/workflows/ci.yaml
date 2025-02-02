@@ -41,15 +41,26 @@ jobs:
         run: |
           aws ecr describe-repositories --repository-names gitops || aws ecr create-repository --repository-name gitops
 
-      - name: Build Backend (Python) image
-        run: |
-          docker build -t my-python-backend:latest -f start-doing/backend/Dockerfile start-doing/backend
-          docker tag my-python-backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:BACK-${{ env.sha }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      - name: Build Frontend (NGINX) image
-        run: |
-          docker build -t my-nginx-frontend:latest -f start-doing/frontend/Dockerfile start-doing/frontend
-          docker tag my-nginx-frontend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:FRONT-${{ env.sha }}
+      - name: Build Backend (Python) image locally
+        uses: docker/build-push-action@v5
+        with:
+          context: start-doing/backend
+          file: start-doing/backend/Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: my-python-backend:latest
+
+      - name: Build Frontend (NGINX) image locally
+        uses: docker/build-push-action@v5
+        with:
+          context: start-doing/frontend
+          file: start-doing/frontend/Dockerfile
+          platforms: linux/amd64
+          load: true
+          tags: my-nginx-frontend:latest
 
       - name: Test network connectivity
         run: |
@@ -74,22 +85,34 @@ jobs:
           echo "✅ Network connectivity test passed!"
           docker-compose -f start-doing/docker-compose.yaml down
 
-      - name: Push Backend (Python) image to ECR
+      - name: Build and Push Backend (Python) multi-arch image
         if: success()
-        run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:BACK-${{ env.sha }}
+        uses: docker/build-push-action@v5
+        with:
+          context: start-doing/backend
+          file: start-doing/backend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:BACK-${{ env.sha }}
 
-      - name: Push Frontend (NGINX) image to ECR
+      - name: Build and Push Frontend (NGINX) multi-arch image
         if: success()
-        run: |
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:FRONT-${{ env.sha }}
+        uses: docker/build-push-action@v5
+        with:
+          context: start-doing/frontend
+          file: start-doing/frontend/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/gitops:FRONT-${{ env.sha }}
           
       - name: Login to GitHub
+        if: success()
         run: |
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
    
       - name: Clone GitOps Repository
+        if: success()
         run: |
           cd /home/runner/work/
           git clone https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/Virgin28/GitOps-ArgoCD.git
@@ -98,6 +121,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
       - name: Update Values File
+        if: success()
         run: |
           cd /home/runner/work/GitOps-ArgoCD/environments/
 
@@ -135,6 +159,7 @@ jobs:
           echo "Updated values.yaml with frontend and backend commit SHA tags."
 
       - name: Commit and Push Changes
+        if: success()
         run: |
           cd /home/runner/work/GitOps-ArgoCD/
           git add .
