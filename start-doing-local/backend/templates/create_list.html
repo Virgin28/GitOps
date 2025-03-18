@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create List</title>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 6rem;
+            margin-bottom: 20px;
+            transform: translateY(-20%);
+        }
+
+        .button-container {
+            margin-top: 20px;
+        }
+
+        .input-container input {
+            font-size: 1rem;
+            padding: 8px;
+            margin: 20px 0;
+            width: 50%;
+            max-width: 300px;
+            background-color: white;
+            color: black;
+            border: 2px solid black;
+            border-radius: 5px;
+        }
+
+        .back-button, .submit-button {
+            font-size: 1rem;
+            text-decoration: none;
+            color: white;
+            background-color: black;
+            padding: 5px 10px;
+            border-radius: 5px;
+            border: 2px solid white;
+            margin: 5px;
+            cursor: pointer;
+        }
+
+        /* Hover effect for the 'forget about it' button */
+        .back-button:hover {
+            background-color: #ff4c4c;
+            border-color: #ff4c4c;
+        }
+
+        /* Hover effect for the 'LETS GO' button */
+        .submit-button:hover {
+            background-color: #4CAF50;
+            border-color: #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <h1>fresh, new, do.</h1>
+    <div class="input-container">
+        <input type="text" id="list-name" placeholder="what now?" required />
+    </div>
+    <div class="button-container">
+        <a href="/lists" class="back-button">forget about it</a>
+        <button onclick="createList()" class="submit-button">LETS GO</button>
+    </div>
+
+    <script>
+        document.getElementById('list-name').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                createList();
+            }
+        });
+
+        function createList() {
+            const listName = document.getElementById('list-name').value.trim();
+            if (!listName) {
+                alert('Please enter a list name');
+                return;
+            }
+
+            fetch('/api/create-list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ list_name: listName })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                window.location.href = '/lists';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to create list. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>
